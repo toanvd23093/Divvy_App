@@ -60,22 +60,22 @@ class DivvyNumericTester():
             transaction_dict = self.rawData.iloc[i].to_dict()
             TotalExpense = transaction_dict['Cost']
             MemberInvolvedInTheTransaction = []
-            Shares = []
+            Shares = {}
             for member in self.keyUserMapping.keys():          
                 if transaction_dict[member] > 0:
                     WhoPaid = self.keyUserMapping[member]
 
                     if transaction_dict[member] < TotalExpense:
                         MemberInvolvedInTheTransaction.append(self.keyUserMapping[member])
-                        Shares.append((TotalExpense-transaction_dict[member])/TotalExpense)
+                        Shares.update({self.keyUserMapping[member]:(TotalExpense-transaction_dict[member])/TotalExpense})
 
                 if transaction_dict[member] < 0:
                     MemberInvolvedInTheTransaction.append(self.keyUserMapping[member])
-                    Shares.append(-transaction_dict[member]/TotalExpense)
+                    Shares.update({self.keyUserMapping[member]:-transaction_dict[member]/TotalExpense})
 
-            min_value = min(Shares)
-            for index in range(len(Shares)):
-                Shares[index] = Shares[index] / min_value
+            min_value = min(Shares.values())
+            for member in Shares.keys():
+                Shares[member] /= min_value
 
             myGroup.addExpenseSinglePayer(MemberInvolvedInTheTransaction,TotalExpense,WhoPaid,Shares,transaction_dict['Description'])
     

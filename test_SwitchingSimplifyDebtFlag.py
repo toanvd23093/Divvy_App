@@ -1,7 +1,8 @@
-from User import User
 from Group import Group
+from User import User
+import pytest
 
-# coverage run -m pytest test_GroupAddExpenseWithSimplifyDebt.py test_GroupAddExpenseNoSimplifyDebt.py test_GroupConstructor.py test_GroupAddRemoveUsers.py test_User.py test_GroupAddExpenses_RealDataSet.py 
+# coverage run -m pytest
 # coverage report -m
 # coverage html
 
@@ -18,22 +19,22 @@ def setup_users_and_group():
 def test_calculateExpenses1(): #1
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan, bich,eugene], True)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene], False)
 
     # Add expenses
-    bibibi.addExpenseSinglePayer([toan, bich,eugene],120,toan,"planeTicket")   
+    bibibi.addExpenseSinglePayer([toan, bich, eugene],120,toan,"planeTicket")   
     assert bibibi.MembersDB[toan] == {toan:0,bich:40,eugene:40}
 
     bibibi.addExpenseSinglePayer([bich, toan, eugene],60,bich,"dinner")
     assert bibibi.MembersDB[bich] == {bich:0,toan:20,eugene:20}
 
-    bibibi.addExpenseSinglePayer([toan,eugene, bich],15,eugene,"drink")
+    bibibi.addExpenseSinglePayer([toan, eugene, bich],15,eugene,"drink")
     assert bibibi.MembersDB[eugene] == {toan:5,eugene:0,bich:5}
 
-    bibibi.addExpenseSinglePayer([bich,eugene,toan],90,toan,"hotel")   
+    bibibi.addExpenseSinglePayer([bich, eugene, toan],90,toan,"hotel")   
     assert bibibi.MembersDB[toan] == {toan:0,bich:70,eugene:70}
 
-    bibibi.addExpenseSinglePayer([bich,eugene],20,toan,"water")   
+    bibibi.addExpenseSinglePayer([bich, eugene],20,toan,"water")   
     assert bibibi.MembersDB[toan] == {toan:0,bich:80,eugene:80}
 
     bibibi.addExpenseSinglePayer([bich, toan, eugene],27,bich,"dinner")
@@ -47,16 +48,27 @@ def test_calculateExpenses1(): #1
 
     bibibi.splitExpensesCalculation()
 
-    assert bibibi.ResultsDB == {toan  :{bich:5.0,eugene:106.0,toan:0},
-                                bich: {toan:0,bich:0,eugene:0},
-                                eugene: {toan:0,bich:0,eugene:0}
+    assert bibibi.ResultsDB == {toan   : {toan:0,bich:36.0,eugene:75.0},
+                                bich   : {toan:0,bich:0,eugene:31.0},
+                                eugene : {toan:0,bich:0,eugene:0},
                                 }
     
+    bibibi.SimplifyDebt = True
+    assert bibibi.ResultsDB == {toan   : {bich:5.0,eugene:106.0,toan:0},
+                                bich   : {toan:0,bich:0,eugene:0},
+                                eugene : {toan:0,bich:0,eugene:0}
+                                }
 
+    bibibi.SimplifyDebt = False
+    assert bibibi.ResultsDB == {toan   : {toan:0,bich:36.0,eugene:75.0},
+                                bich   : {toan:0,bich:0,eugene:31.0},
+                                eugene : {toan:0,bich:0,eugene:0},
+                                }
+    
 def test_calculateExpenses2(): #2
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich,eugene], True)
+    bibibi = Group("23GrampianWay", [toan, bich,eugene], False)
 
     # Add expenses
     bibibi.addExpenseSinglePayer([toan,bich,eugene],90,toan,"planeTicket")   
@@ -90,16 +102,22 @@ def test_calculateExpenses2(): #2
     assert bibibi.MembersDB[toan] == {eugene:180,toan:0,bich:180}
 
     bibibi.splitExpensesCalculation()
-
+    
     assert bibibi.ResultsDB == {eugene: {toan:10.0, bich:10.0, eugene:0},
                                 toan: {toan:0,bich:0,eugene:0},
                                 bich: {toan:0,bich:0,eugene:0}
                                 }
-
+    
+    bibibi.SimplifyDebt = True
+    assert bibibi.ResultsDB == {eugene: {toan:10.0, bich:10.0, eugene:0},
+                                toan: {toan:0,bich:0,eugene:0},
+                                bich: {toan:0,bich:0,eugene:0}
+                                }
+    
 def test_calculateExpenses3(): #3
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], True)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], False)
 
     # Add expenses
     bibibi.addExpenseSinglePayer([toan,bich,eugene,pho],16,toan,"planeTicket")   
@@ -119,36 +137,66 @@ def test_calculateExpenses3(): #3
 
     bibibi.splitExpensesCalculation()
     
+    assert bibibi.ResultsDB == {toan: {toan:0,bich:7.0,eugene:6.0,pho:5.0},
+                                eugene: {toan:0,pho:0,eugene:0,bich:1.0},
+                                pho: {bich:2, eugene:1,toan:0,pho:0},
+                                bich:{toan:0,bich:0,eugene:0,pho:0}
+                               }
+    
+    bibibi.SimplifyDebt = True
     assert bibibi.ResultsDB == {toan: {bich:10.0,eugene:6.0,pho:2.0,toan:0},
                                 bich: {toan:0,bich:0,eugene:0,pho:0},
                                 eugene: {toan:0,bich:0,eugene:0,pho:0},
                                 pho: {toan:0,bich:0,eugene:0,pho:0}
+                               }
+    
+    bibibi.SimplifyDebt = False
+    assert bibibi.ResultsDB == {toan: {toan:0,bich:7.0,eugene:6.0,pho:5.0},
+                                eugene: {toan:0,pho:0,eugene:0,bich:1.0},
+                                pho: {bich:2, eugene:1,toan:0,pho:0},
+                                bich:{toan:0,bich:0,eugene:0,pho:0}
                                }
     
 def test_calculateExpenses4(): #4
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], True)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], False)
 
     # Add expenses
-    bibibi.addExpenseSinglePayer([toan,pho,eugene,bich],24,eugene,"drink")
-    bibibi.addExpenseSinglePayer([bich,eugene,pho,toan],28,pho,"hotel") 
-    bibibi.addExpenseSinglePayer([toan,bich,eugene,pho],16,toan,"planeTicket")   
     bibibi.addExpenseSinglePayer([pho,bich,toan,eugene],20,bich,"dinner")
+    bibibi.addExpenseSinglePayer([bich,eugene,pho,toan],28,pho,"hotel")   
+    bibibi.addExpenseSinglePayer([toan,bich,eugene,pho],16,toan,"planeTicket")   
+    bibibi.addExpenseSinglePayer([toan,pho,eugene,bich],24,eugene,"drink")
     bibibi.addExpenseSinglePayer([bich,toan,pho,eugene],32,toan,"water")   
-   
+
     bibibi.splitExpensesCalculation()
     
+    assert bibibi.ResultsDB == {toan: {toan:0,bich:7.0,eugene:6.0,pho:5.0},
+                                eugene: {toan:0,eugene:0,pho:0,bich:1.0},
+                                pho: {bich:2,eugene:1,toan:0,pho:0},
+                                bich: {toan:0,bich:0,eugene:0,pho:0}
+                               }
+    
+    bibibi.SimplifyDebt = True
+
     assert bibibi.ResultsDB == {toan: {bich:10.0,eugene:6.0,pho:2.0,toan:0},
                                 bich: {toan:0,bich:0,eugene:0,pho:0},
                                 eugene: {toan:0,bich:0,eugene:0,pho:0},
                                 pho: {toan:0,bich:0,eugene:0,pho:0}
                                }
+    
+    bibibi.SimplifyDebt = False
 
+    assert bibibi.ResultsDB == {toan: {toan:0,bich:7.0,eugene:6.0,pho:5.0},
+                                eugene: {toan:0,eugene:0,pho:0,bich:1.0},
+                                pho: {bich:2,eugene:1,toan:0,pho:0},
+                                bich: {toan:0,bich:0,eugene:0,pho:0}
+                               }
+    
 def test_calculateExpenses5(): #5
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich,eugene], True)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene], False)
 
     # Add expenses
     bibibi.addExpenseSinglePayer([bich,toan,eugene],90,toan,"dinner")
@@ -158,10 +206,22 @@ def test_calculateExpenses5(): #5
     bibibi.addExpenseSinglePayer([bich,toan,eugene],60,toan,"water")   
 
     bibibi.splitExpensesCalculation()
+
+    assert bibibi.ResultsDB == {toan: {bich:30.0,eugene:20.0,toan:0},
+                                eugene: {bich:10.0,toan:0,eugene:0},
+                                bich: {toan:0,bich:0,eugene:0}
+                               }
     
+    bibibi.SimplifyDebt = True
     assert bibibi.ResultsDB == {toan: {bich:40.0,eugene:10.0,toan:0},
                                 bich: {toan:0,bich:0,eugene:0},
                                 eugene: {toan:0,bich:0,eugene:0}
+                               }
+    
+    bibibi.SimplifyDebt = False
+    assert bibibi.ResultsDB == {toan: {bich:30.0,eugene:20.0,toan:0},
+                                eugene: {bich:10.0,toan:0,eugene:0},
+                                bich: {toan:0,bich:0,eugene:0}
                                }
     
     # Add Pho to group
@@ -187,20 +247,34 @@ def test_calculateExpenses5(): #5
                                }
     
     bibibi.splitExpensesCalculation()
+
+    assert bibibi.ResultsDB == {toan: {bich:60.0,eugene:30.0,toan:0,pho:0},
+                                eugene: {bich:30.0,toan:0,pho:0,eugene:0},
+                                pho: {toan:30.0,bich:60.0,eugene:40.0,pho:0},
+                                bich: {toan:0,bich:0,pho:0,eugene:0}
+                               }
     
+    bibibi.SimplifyDebt = True
+
     assert bibibi.ResultsDB == {toan: {bich:60.0,pho:0,toan:0,eugene:0},
                                 pho: {bich:90.0,eugene:40.0,toan:0,pho:0},
                                 bich: {toan:0,bich:0,eugene:0,pho:0},
                                 eugene: {toan:0,bich:0,eugene:0,pho:0}
                                }
+    
+    bibibi.SimplifyDebt = False
+
+    assert bibibi.ResultsDB == {toan: {bich:60.0,eugene:30.0,toan:0,pho:0},
+                                eugene: {bich:30.0,toan:0,pho:0,eugene:0},
+                                pho: {toan:30.0,bich:60.0,eugene:40.0,pho:0},
+                                bich: {toan:0,bich:0,pho:0,eugene:0}
+                               }
+    
 
 def test_calculateExpenses6(): #6
     # Create users and group
     toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich,eugene], True)
-
-    # Add Pho to group
-    bibibi.addMemberToGroup(pho)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], False)
 
     # Add expenses
     bibibi.addExpenseSinglePayer([bich,toan,eugene],90,toan,"dinner")
@@ -210,7 +284,15 @@ def test_calculateExpenses6(): #6
     bibibi.addExpenseSinglePayer([bich,toan,eugene],60,toan,"water")   
 
     bibibi.splitExpensesCalculation()
+
+    assert bibibi.ResultsDB == {toan: {bich:30.0,eugene:20.0,toan:0,pho:0},
+                                eugene: {bich:10.0,toan:0,eugene:0,pho:0},
+                                bich: {toan:0,bich:0,eugene:0,pho:0},
+                                pho: {toan:0,pho:0,eugene:0,bich:0}
+                               }
     
+    bibibi.SimplifyDebt = True
+
     assert bibibi.ResultsDB == {toan: {bich:40.0,eugene:10.0,toan:0,pho:0},
                                 bich: {toan:0,bich:0,eugene:0,pho:0},
                                 eugene: {toan:0,bich:0,eugene:0,pho:0},
@@ -238,40 +320,10 @@ def test_calculateExpenses6(): #6
                                 eugene: {toan:0,bich:0,eugene:0,pho:0}
                                }
     
-def test_calculateExpenses7(): #7
-    # Create users and group
-    toan, bich, eugene, pho = setup_users_and_group()
-    bibibi = Group("23GrampianWay", [toan,bich], True)
+    bibibi.SimplifyDebt = False
 
-    # Add expenses
-    bibibi.addExpenseSinglePayer([bich,toan],90,toan,"dinner")
-    bibibi.addExpenseSinglePayer([bich,toan],40,bich,"dinner")
-    bibibi.splitExpensesCalculation()
-
-    assert bibibi.ResultsDB == {toan: {bich:25.0,toan:0},                                
-                                bich: {toan:0,bich:0},                               
-                               }
-    
-    # Add Eugene to group
-    bibibi.addMemberToGroup(eugene)
-
-    # Add expense
-    assert bibibi.MembersDB == {toan: {bich:45.0,toan:0},                                
-                                bich: {toan:20.0,bich:0},                               
-                                eugene:{}}
-    
-    bibibi.addExpenseSinglePayer([toan,eugene],120,bich,"dinner")
-    
-    bibibi.splitExpensesCalculation()
-    assert bibibi.ResultsDB == {toan: {bich:0,toan:0,eugene:0},                                
-                                bich: {toan:35.0,bich:0,eugene:60.0},                               
-                                eugene:{toan:0,bich:0,eugene:0}
-                                } 
-
-    bibibi.addExpenseSinglePayer([toan,eugene],220,eugene,"dinner")
-    
-    bibibi.splitExpensesCalculation()
-    assert bibibi.ResultsDB == {toan: {bich:0,toan:0,eugene:0},                                
-                                bich: {toan:95.0,bich:0,eugene:0},                               
-                                eugene:{toan:50.0,bich:0,eugene:0}
-                                } 
+    assert bibibi.ResultsDB == {toan: {bich:60.0,eugene:30.0,toan:0,pho:0},
+                                eugene: {bich:30.0,toan:0,pho:0,eugene:0},
+                                pho: {toan:30.0,bich:60.0,eugene:40.0,pho:0},
+                                bich: {toan:0,bich:0,pho:0,eugene:0}
+                               }  

@@ -3,17 +3,29 @@ import re
 import pandas as pd
 
 class Group():
+    __slots__ = (
+        '_GroupName',
+        '_InitialGroupMembers',
+        '_SimplifyDebt',
+        'MembersDB',
+        'ResultsDB',
+        'ResultsDBNoSimplifyDebt',
+        'ResultsDBWithSimplifyDebt',
+    )
+
     def __init__(self,GroupName,InitialGroupMembers,SimplifyDebt=False):
         self.GroupName = GroupName
         self.InitialGroupMembers = InitialGroupMembers
-        self.MembersDB = {}
-        self.SimplifyDebt = SimplifyDebt
+        self.MembersDB = {}       
         self.ResultsDB = {}
-        
+        self.ResultsDBNoSimplifyDebt = {}
+        self.ResultsDBWithSimplifyDebt = {}
+        self.SimplifyDebt = SimplifyDebt
+
         if len(self.InitialGroupMembers) != 0:
             for i in range (0,len(self.InitialGroupMembers)):
                 self.MembersDB.update({self.InitialGroupMembers[i]:{}})
-        
+
     @property
     def GroupName(self):
         return self._GroupName
@@ -53,6 +65,12 @@ class Group():
             raise ValueError("Simplify Debt option should be logical flag")
         
         self._SimplifyDebt = SimplifyDebt
+        
+        # Update ResultsDB accordingly based on SimplifyDebt flag
+        if self._SimplifyDebt:
+            self.ResultsDB = self.ResultsDBWithSimplifyDebt           
+        else:
+            self.ResultsDB = self.ResultsDBNoSimplifyDebt
     
     def addMemberToGroup(self,member):
         if not isinstance(member, User):
@@ -63,10 +81,6 @@ class Group():
         
         if member in self.MembersDB:
             raise ValueError("This user has already been added to this group")
-
-        if self.ResultsDB:
-            self.MembersDB = self.ResultsDB
-            self.ResultsDB = {}
 
         self.MembersDB.update({member:{}})
 
@@ -79,12 +93,15 @@ class Group():
         
         del self.MembersDB[member]
 
+    # In case there is only one single payer
     def addExpenseSinglePayer(self,*args):
         if len(args) == 5: 
             MemberInvolvedInTheTransaction,TotalExpense,WhoPaid,Shares,Description = args
         elif len(args) == 4: 
             MemberInvolvedInTheTransaction,TotalExpense,WhoPaid,Description = args
-            Shares = [1]*len(MemberInvolvedInTheTransaction)
+            Shares = {}
+            for borrower in MemberInvolvedInTheTransaction:
+                Shares.update({borrower:1})
 
         if not isinstance(WhoPaid, User):
             raise ValueError("User not recognized")
@@ -94,29 +111,24 @@ class Group():
         
         if TotalExpense <= 0:
             raise ValueError("Total expense must be positive")
-        
-        if self.ResultsDB:
-            self.MembersDB = self.ResultsDB
-            self.ResultsDB = {}
 
         borrowerDict = self.MembersDB[WhoPaid]
-        
-        for i in range (0,len(MemberInvolvedInTheTransaction)):
-            if MemberInvolvedInTheTransaction[i] == WhoPaid:
-                if MemberInvolvedInTheTransaction[i] not in borrowerDict:
-                    borrowerDict.update({MemberInvolvedInTheTransaction[i]:0})
+    
+        for borrower in MemberInvolvedInTheTransaction:
+            if borrower == WhoPaid:
+                if borrower not in borrowerDict:
+                    borrowerDict.update({borrower:0})
                 else:
                     continue
             else:
-                if MemberInvolvedInTheTransaction[i] not in borrowerDict:
-                    borrowerDict.update({MemberInvolvedInTheTransaction[i]:Shares[i]*TotalExpense/sum(Shares)})
+                if borrower not in borrowerDict:
+                    borrowerDict.update({borrower:Shares[borrower]*TotalExpense/sum(Shares.values())})
                 else:
-                    borrowerDict[MemberInvolvedInTheTransaction[i]] += Shares[i]*TotalExpense/sum(Shares)
+                    borrowerDict[borrower] += Shares[borrower]*TotalExpense/sum(Shares.values())
 
         self.MembersDB[WhoPaid] = borrowerDict
 
-
-
+    # In case there are multiple payers
     def addExpenseMultiplePayers(self,*args):
         
         TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,Description = args
@@ -159,31 +171,42 @@ class Group():
         if sum(AmountBorrowed) > TotalExpense:
             raise ValueError(f"The borrowed values do not add up to the total cost of ${TotalExpense:.2f}. You are over by ${sum(AmountBorrowed)-TotalExpense:.2f}")
         
-        if self.ResultsDB:
-            self.MembersDB = self.ResultsDB
-            self.ResultsDB = {}
-        
-        TotalExpenseAdjusted = 0
+        # Preprocess lenders' expenses, if a lender paid and also is involved to an expense, we offset that expense from the total amount the lender paid
         for lender in WhoPaid.keys():
             if lender in MemberInvolvedInTheTransaction:
-                WhoPaid[lender]-= MemberInvolvedInTheTransaction[lender]
-                MemberInvolvedInTheTransaction[lender] = 0
-                TotalExpenseAdjusted += WhoPaid[lender]
+                if WhoPaid[lender] >= MemberInvolvedInTheTransaction[lender]:
+                    WhoPaid[lender] -= MemberInvolvedInTheTransaction[lender]
+                    MemberInvolvedInTheTransaction[lender] = 0
+                else:
+                    MemberInvolvedInTheTransaction[lender] -= WhoPaid[lender] 
+                    WhoPaid[lender] = 0
+
+        # Distribute remaining expenses to the borrower
         for lender in WhoPaid.keys():
             borrowerDict = self.MembersDB[lender]
             
             for borrower in MemberInvolvedInTheTransaction.keys():
                 if borrower == lender:
-                    if borrower not in borrowerDict:
-                        borrowerDict.update({borrower:0})
+                    borrowerDict.update({borrower:0})
+                
+                if borrower != lender:
+                    if MemberInvolvedInTheTransaction[borrower] <= WhoPaid[lender]:
+                        if borrower not in borrowerDict:
+                            borrowerDict[borrower] = MemberInvolvedInTheTransaction[borrower]
+                        else:
+                            borrowerDict[borrower] += MemberInvolvedInTheTransaction[borrower]
+                                               
+                        WhoPaid[lender] -= MemberInvolvedInTheTransaction[borrower]
+                        MemberInvolvedInTheTransaction[borrower] = 0
                     else:
-                        continue
-                else:
-                    if borrower not in borrowerDict:
-                        borrowerDict.update({borrower:MemberInvolvedInTheTransaction[borrower]/TotalExpenseAdjusted*WhoPaid[lender]})
-                    else:
-                        borrowerDict[borrower] += MemberInvolvedInTheTransaction[borrower]/TotalExpenseAdjusted*WhoPaid[lender]
+                        if borrower not in borrowerDict:
+                            borrowerDict[borrower] = WhoPaid[lender]
+                        else:
+                            borrowerDict[borrower] += WhoPaid[lender]
 
+                        MemberInvolvedInTheTransaction[borrower]-=WhoPaid[lender]
+                        WhoPaid[lender] = 0
+                            
             self.MembersDB[lender] = borrowerDict
 
 
@@ -249,39 +272,50 @@ class Group():
                         lender_borrower_table[r][c] = 0
                         lender_borrower_table[c][r] = 0
 
+        # Now store the info from the simplified table into a dict{dict}
+        # for easy access the result
+        # Format: 
+        # {
+        #   lender1:{borrower #1:amount owed, borrower #2:amount owed, etc.},
+        #   lender2:{borrower #1:amount owed, borrower #2:amount owed, etc.}
+        # }
+
+        self.ResultsDBNoSimplifyDebt = self.__createResultsDB(mapUserObjectToIntegerDict,lender_borrower_table)
+
         # Further simplify Debt if flag SimplifyDebt = True
         #          Toan      Bich      Eugene
         # Toan       0         0         35
         # Bich       0         0          5
         # Eugene     0         0          0
-        if self.SimplifyDebt:
-            for r in range(0,len(allMembers)):
-                for c in range(0,len(allMembers)):
-                    if r == c:
-                        continue
+        lender_borrower_table_simplifyDebt = lender_borrower_table.copy()
 
-                    if lender_borrower_table[r][c] == 0:
-                        continue
+        for r in range(0,len(allMembers)):
+            for c in range(0,len(allMembers)):
+                if r == c:
+                    continue
+
+                if lender_borrower_table_simplifyDebt[r][c] == 0:
+                    continue
                     
-                    for c1 in range(0,len(allMembers)):
-                        if c == c1:
-                            continue
+                for c1 in range(0,len(allMembers)):
+                    if c == c1:
+                        continue
                         
-                        if lender_borrower_table[c][c1] == 0:
-                            continue
+                    if lender_borrower_table_simplifyDebt[c][c1] == 0:
+                        continue
                         
-                        if lender_borrower_table[r][c] > lender_borrower_table[c][c1]:
-                            lender_borrower_table[r][c]-=lender_borrower_table[c][c1]
-                            lender_borrower_table[r][c1]+=lender_borrower_table[c][c1]
-                            lender_borrower_table[c][c1] = 0
-                        elif lender_borrower_table[r][c] < lender_borrower_table[c][c1]:
-                            lender_borrower_table[c][c1]-=lender_borrower_table[r][c]
-                            lender_borrower_table[r][c1]+=lender_borrower_table[r][c]
-                            lender_borrower_table[r][c] = 0
-                        elif lender_borrower_table[r][c] == lender_borrower_table[c][c1]:
-                            lender_borrower_table[r][c1]+=lender_borrower_table[c][c1]
-                            lender_borrower_table[r][c] = 0
-                            lender_borrower_table[c][c1] = 0
+                    if lender_borrower_table_simplifyDebt[r][c] > lender_borrower_table_simplifyDebt[c][c1]:
+                        lender_borrower_table_simplifyDebt[r][c]-=lender_borrower_table_simplifyDebt[c][c1]
+                        lender_borrower_table_simplifyDebt[r][c1]+=lender_borrower_table_simplifyDebt[c][c1]
+                        lender_borrower_table_simplifyDebt[c][c1] = 0
+                    elif lender_borrower_table_simplifyDebt[r][c] < lender_borrower_table_simplifyDebt[c][c1]:
+                        lender_borrower_table_simplifyDebt[c][c1]-=lender_borrower_table_simplifyDebt[r][c]
+                        lender_borrower_table_simplifyDebt[r][c1]+=lender_borrower_table_simplifyDebt[r][c]
+                        lender_borrower_table_simplifyDebt[r][c] = 0
+                    elif lender_borrower_table_simplifyDebt[r][c] == lender_borrower_table_simplifyDebt[c][c1]:
+                        lender_borrower_table_simplifyDebt[r][c1]+=lender_borrower_table_simplifyDebt[c][c1]
+                        lender_borrower_table_simplifyDebt[r][c] = 0
+                        lender_borrower_table_simplifyDebt[c][c1] = 0
 
         # Now store the info from the simplified table into a dict{dict}
         # for easy access the result
@@ -290,20 +324,30 @@ class Group():
         #   lender1:{borrower #1:amount owed, borrower #2:amount owed, etc.},
         #   lender2:{borrower #1:amount owed, borrower #2:amount owed, etc.}
         # }
+        self.ResultsDBWithSimplifyDebt = self.__createResultsDB(mapUserObjectToIntegerDict,lender_borrower_table_simplifyDebt)
         
+        # Assign the appropriate results DB
+        if self.SimplifyDebt:
+            self.ResultsDB = self.ResultsDBWithSimplifyDebt           
+        else:
+            self.ResultsDB = self.ResultsDBNoSimplifyDebt
+
+    def __createResultsDB(self, mapUserObjectToIntegerDict,costMatrix): # Use __ to indicate this method is private and wont allow external use
         resultsDBTmp = {}
+        allMembers = mapUserObjectToIntegerDict.keys()
+
         for lender in allMembers:
             for borrower in allMembers:
                 r = mapUserObjectToIntegerDict[lender]
                 c = mapUserObjectToIntegerDict[borrower]
 
                 if lender not in resultsDBTmp:
-                    resultsDBTmp.update({lender:{borrower:lender_borrower_table[r][c]}})
+                    resultsDBTmp.update({lender:{borrower:costMatrix[r][c]}})
                 else:
-                    resultsDBTmp[lender].update({borrower:lender_borrower_table[r][c]})
+                    resultsDBTmp[lender].update({borrower:costMatrix[r][c]})
 
-        self.ResultsDB = resultsDBTmp
-
+        return resultsDBTmp
+    
     def printOutResult(self):
         # Print out the final result for who is the lender and who are the borrowers 
         # within the group
@@ -320,17 +364,63 @@ def main():
     toan = User("toanv@mathworks.com", "123456", "Toan", "Vo-Dai")
     bich = User("beryl.tran@ey.com", "123456", "Bich", "Tran")
     eugene = User("eugene.vodai@harvard.com", "123456", "Eugene", "Vo-Dai")
-    pho = User("phonuoc123@gmail.com", "123456", "Pho", "Pham")
-
+    
     # Create group
-    bibibi = Group("23GrampianWay", [toan,bich,eugene,pho], True)
+    bibibi = Group("23GrampianWay", [toan,bich,eugene], False)
 
     # Add expenses
-    TotalExpense = 120
-    WhoPaid = {toan:90, bich:40}
-    MemberInvolvedInTheTransaction = {toan:12, bich:28, pho:65, eugene:15}
-    bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
-    print(bibibi.MembersDB)
+    bibibi.addExpenseSinglePayer([toan, bich,eugene],120,toan,"planeTicket")   
+    assert bibibi.MembersDB[toan] == {toan:0,bich:40,eugene:40}
+
+    bibibi.addExpenseSinglePayer([bich, toan, eugene],60,bich,"dinner")
+    assert bibibi.MembersDB[bich] == {bich:0,toan:20,eugene:20}
+
+    bibibi.addExpenseSinglePayer([toan,eugene, bich],15,eugene,"drink")
+    assert bibibi.MembersDB[eugene] == {toan:5,eugene:0,bich:5}
+
+    bibibi.addExpenseSinglePayer([bich,eugene,toan],90,toan,"hotel")   
+    assert bibibi.MembersDB[toan] == {toan:0,bich:70,eugene:70}
+
+    bibibi.addExpenseSinglePayer([bich,eugene],20,toan,"water")   
+    assert bibibi.MembersDB[toan] == {toan:0,bich:80,eugene:80}
+
+    bibibi.addExpenseSinglePayer([bich, toan, eugene],27,bich,"dinner")
+    assert bibibi.MembersDB[bich] == {bich:0,toan:29,eugene:29}
+
+    bibibi.addExpenseSinglePayer([bich, toan],16,bich,"dinner")
+    assert bibibi.MembersDB[bich] == {bich:0,toan:37,eugene:29}
+
+    bibibi.addExpenseSinglePayer([eugene, toan],14,bich,"dinner")
+    assert bibibi.MembersDB[bich] == {bich:0,toan:44,eugene:36}
+
+    bibibi.splitExpensesCalculation()
+
+    print("---------------------NO SIMPLIFY--------------------------------")
+    print(bibibi.ResultsDB)
+    
+    assert bibibi.ResultsDB == {toan   : {toan:0,bich:36.0,eugene:75.0},
+                                bich   : {toan:0,bich:0,eugene:31.0},
+                                eugene : {toan:0,bich:0,eugene:0},
+                                }
+    
+    bibibi.SimplifyDebt = True
+    print("----------------------WITH SIMPLIFY-------------------------------")
+    print(bibibi.ResultsDB)
+
+    assert bibibi.ResultsDB == {toan   : {toan:0,bich:5.0,eugene:106.0},
+                                bich   : {toan:0,bich:0,eugene:0.0},
+                                eugene : {toan:0,bich:0,eugene:0},
+                                }
+
+    bibibi.SimplifyDebt = False
+    print("---------------------NO SIMPLIFY--------------------------------")
+    print(bibibi.ResultsDB)
+    
+    assert bibibi.ResultsDB == {toan   : {toan:0,bich:36.0,eugene:75.0},
+                                bich   : {toan:0,bich:0,eugene:31.0},
+                                eugene : {toan:0,bich:0,eugene:0},
+                                }
+    
 
 if __name__=="__main__":
     main()
