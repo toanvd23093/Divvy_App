@@ -111,9 +111,115 @@ def test_AddExpenses_MultiPayer_Case1(): #5
     MemberInvolvedInTheTransaction = {toan:12, bich:28, pho:65, eugene:15}
     bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
 
-    Exp_Members_DB = {toan:{toan:0.0,bich:0.0,pho:55.25,eugene:12.75},
-                      bich:{toan:0.0,bich:0.0,pho:9.75,eugene:2.25},
+    Exp_Members_DB = {toan:{toan:0.0,bich:0.0,pho:65,eugene:3},
+                      bich:{toan:0.0,bich:0.0,pho:0,eugene:12},
                       pho:{},
                       eugene:{}}
     
     assert Exp_Members_DB == bibibi.MembersDB
+
+    bibibi.splitExpensesCalculation()
+
+    Exp_Results_DB = {toan  : {toan:0.0,bich:0.0,pho:65,eugene:3},
+                      bich  : {toan:0.0,bich:0.0,pho:0,eugene:12},
+                      pho   : {toan:0.0,bich:0.0,pho:0,eugene:0},
+                      eugene: {toan:0.0,bich:0.0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+
+def test_AddExpenses_MultiPayer_Case2(): #6
+
+    toan, bich, eugene, pho, bibibi = setup_users_and_group()
+
+    TotalExpense = 120
+
+    # Add expenses #2 
+    WhoPaid = {toan:16, bich:24, eugene: 15, pho: 65}
+    MemberInvolvedInTheTransaction = {toan:9, bich:28, pho:51, eugene:32}
+    bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
+
+    Exp_Members_DB = {toan  : {toan:0,bich:4,pho:0,eugene:3},
+                      bich  : {toan:0,bich:0,pho:0,eugene:0},
+                      pho   : {toan:0,bich:0,pho:0,eugene:14},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Members_DB == bibibi.MembersDB
+
+    bibibi.splitExpensesCalculation()
+
+    Exp_Results_DB = {toan  : {toan:0,bich:4,pho:0,eugene:3},
+                      bich  : {toan:0,bich:0,pho:0,eugene:0},
+                      pho   : {toan:0,bich:0,pho:0,eugene:14},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+
+def test_AddExpenses_MultiPayer_Case3(): #3
+
+    toan, bich, eugene, pho, bibibi = setup_users_and_group()
+
+    TotalExpense = 120
+
+    # Add expenses #1
+    WhoPaid = {toan:80, bich:40}
+    MemberInvolvedInTheTransaction = {toan:12, bich:28, pho:65, eugene:15}
+    bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
+
+    bibibi.splitExpensesCalculation()
+
+    Exp_Results_DB = {toan  : {toan:0.0,bich:0.0,pho:65,eugene:3},
+                      bich  : {toan:0.0,bich:0.0,pho:0,eugene:12},
+                      pho   : {toan:0.0,bich:0.0,pho:0,eugene:0},
+                      eugene: {toan:0.0,bich:0.0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+    # Add expenses #2 
+    WhoPaid = {toan:16, bich:24, eugene: 15, pho: 65}
+    MemberInvolvedInTheTransaction = {toan:9, bich:28, pho:51, eugene:32}
+    bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
+
+    bibibi.splitExpensesCalculation()
+
+    Exp_Results_DB = {toan  : {toan:0,bich:4,pho:65.0,eugene:6},
+                      bich  : {toan:0,bich:0,pho:0,eugene:12.0},
+                      pho   : {toan:0,bich:0,pho:0,eugene:14},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+    bibibi.SimplifyDebt = True
+
+    Exp_Results_DB = {toan  : {toan:0,bich:0,pho:51.0,eugene:24},
+                      bich  : {toan:0,bich:0,pho:0,eugene:8.0},
+                      pho   : {toan:0,bich:0,pho:0,eugene:0},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+    # Add expenses #3
+    TotalExpense = 300
+    WhoPaid = {toan:115, bich:75, eugene:30, pho:80}
+    MemberInvolvedInTheTransaction = {toan:75, bich:75, pho:75, eugene:75}
+    bibibi.addExpenseMultiplePayers(TotalExpense,WhoPaid,MemberInvolvedInTheTransaction,"dinner")
+
+    bibibi.splitExpensesCalculation()
+
+    Exp_Results_DB = {toan  : {toan:0,bich:0,pho:46,eugene:69},
+                      bich  : {toan:0,bich:0,pho:0,eugene:8},
+                      pho   : {toan:0,bich:0,pho:0,eugene:0},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
+    bibibi.SimplifyDebt = False
+
+    Exp_Results_DB = {toan  : {toan:0,bich:4,pho:65,eugene:46},
+                      bich  : {toan:0,bich:0,pho:0,eugene:12},
+                      pho   : {toan:0,bich:0,pho:0,eugene:19},
+                      eugene: {toan:0,bich:0,pho:0,eugene:0}}
+    
+    assert Exp_Results_DB == bibibi.ResultsDB
+
