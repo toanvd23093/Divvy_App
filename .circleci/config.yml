@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  build:
+  build-and-test:
     docker:
       - image: cimg/python:3.13
 
@@ -24,3 +24,6 @@ jobs:
             coverage run -m pytest
             coverage report -m
             coverage html
+      # Step 4: store test results
+      - store_test_results:
+          path: test-results
