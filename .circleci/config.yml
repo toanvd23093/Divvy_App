@@ -16,14 +16,28 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-      # Step 3: run linter and tests
+      # Step 3: run tests and generate coverage
       - run:
-          name: run tests
+          name: run tests and generate coverage
           command: |
             . venv/bin/activate
+            mkdir -p test-results 
+            mkdir -p coverage_html
+            mkdir -p important-coverage
             coverage run -m pytest --junitxml=test-results/results.xml
             coverage report -m
-            coverage html
+            coverage html -d coverage_html
+            ls -al coverage_html
+            # Copy only desired files to a clean artifact directory
+            cp coverage_html/z_*Group_py.html important-coverage/
+            cp coverage_html/z_*User_py.html important-coverage/
       # Step 4: store test results
       - store_test_results:
           path: test-results
+      # Step 5: store useful artifacts for debugging
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - store_artifacts:
+          path: important-coverage
+          destination: important-coverage
