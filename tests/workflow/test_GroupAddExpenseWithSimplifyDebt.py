@@ -1,5 +1,5 @@
-from User import User
-from Group import Group
+from src.User import User
+from src.Group import Group
 
 # coverage run -m pytest test_GroupAddExpenseWithSimplifyDebt.py test_GroupAddExpenseNoSimplifyDebt.py test_GroupConstructor.py test_GroupAddRemoveUsers.py test_User.py test_GroupAddExpenses_RealDataSet.py 
 # coverage report -m

@@ -1,14 +1,18 @@
-from User import User
-from Group import Group
+from src.User import User
+from src.Group import Group
+from tools.LoadDataFileHelper import get_data_file
 import pandas as pd
 import re
 
 # Tester for Numeric Test
 class DivvyNumericTester():
     def __init__(self,fileName):
+
+        data_file = get_data_file(fileName)
+
         self.userList = []
-        self.rawData = pd.read_excel(fileName, sheet_name="Data")
-        self.expectedOutput = pd.read_excel(fileName, sheet_name="ExpResult")
+        self.rawData = pd.read_excel(data_file, sheet_name="Data")
+        self.expectedOutput = pd.read_excel(data_file, sheet_name="ExpResult")
         self.keyUserMapping = {}
 
     def createUserListFromDataFile(self):

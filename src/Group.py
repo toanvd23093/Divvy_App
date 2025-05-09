@@ -1,4 +1,4 @@
-from User import User
+from src.User import User
 import re
 import pandas as pd
 
