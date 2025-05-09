@@ -1,4 +1,4 @@
-from User import User
+from src.User import User
 import pytest # type: ignore
 
 # coverage run -m pytest test_GroupAddExpenseWithSimplifyDebt.py test_GroupAddExpenseNoSimplifyDebt.py test_GroupConstructor.py test_GroupAddRemoveUsers.py test_User.py test_GroupAddExpenses_RealDataSet.py 

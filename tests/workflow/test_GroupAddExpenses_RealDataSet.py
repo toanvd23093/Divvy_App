@@ -1,7 +1,7 @@
-from User import User
-from Group import Group
+from src.User import User
+from src.Group import Group
 import pandas as pd
-from DivvyNumericTester import DivvyNumericTester
+from tools.DivvyNumericTester import DivvyNumericTester
 import pytest # type: ignore
 
 # To run code coverage:

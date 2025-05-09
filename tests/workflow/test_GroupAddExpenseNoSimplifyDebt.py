@@ -1,5 +1,5 @@
-from User import User
-from Group import Group
+from src.User import User
+from src.Group import Group
 import pytest # type: ignore
 import pandas as pd
 

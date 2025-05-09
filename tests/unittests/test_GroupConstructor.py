@@ -1,5 +1,5 @@
-from Group import Group
-from User import User
+from src.Group import Group
+from src.User import User
 
 import pytest # type: ignore
 
