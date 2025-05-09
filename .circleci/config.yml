@@ -26,6 +26,9 @@ jobs:
             coverage report -m
             coverage html -d coverage_html
             ls -al coverage_html
+            # Copy only desired files to a clean artifact directory
+            cp coverage_html/z_*Group_py.html important-coverage/
+            cp coverage_html/z_*User_py.html important-coverage/
       # Step 4: store test results
       - store_test_results:
           path: test-results
