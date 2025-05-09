@@ -22,6 +22,7 @@ jobs:
           command: |
             . venv/bin/activate
             mkdir -p test-results coverage_html
+            mkdir -p important-coverage
             coverage run -m pytest --junitxml=test-results/results.xml
             coverage report -m
             coverage html -d coverage_html
