@@ -27,3 +27,10 @@ jobs:
       # Step 4: store test results
       - store_test_results:
           path: test-results
+      # Step 5: store useful artifacts for debugging
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - store_artifacts:
+          path: coverage_html
+          destination: coverage-report
