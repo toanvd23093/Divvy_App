@@ -1,5 +1,8 @@
 import re
 
+# Create User object
+# Copyright 2025
+
 class User():
     def __init__(self, userEmail, userPassword, userFirstName, userLastName):
         self.userEmail = userEmail
