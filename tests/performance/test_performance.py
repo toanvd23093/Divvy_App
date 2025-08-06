@@ -2,6 +2,9 @@ import pytest
 from src.Group import Group
 from src.User import User
 
+# Benchmark performance of the app
+# Copyright 2025
+
 # coverage run -m pytest
 # coverage report -m
 # python -m pytest -m splitExpense_ThreePerson -v -s
