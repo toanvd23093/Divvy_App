@@ -2,9 +2,7 @@ from src.User import User
 import re
 import pandas as pd
 
-# Object to create Group Expenses
 # Copyright 2025
-
 class Group():
     __slots__ = (
         '_GroupName',
