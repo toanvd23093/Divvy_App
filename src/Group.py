@@ -3,7 +3,7 @@ import re
 import pandas as pd
 
 # Copyright 2025
-class GroupModified():
+class Group():
     __slots__ = (
         '_GroupName',
         '_InitialGroupMembers',
