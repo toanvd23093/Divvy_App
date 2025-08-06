@@ -3,7 +3,7 @@ import re
 # Create User object
 # Copyright 2025
 
-class User0():
+class User():
     def __init__(self, userEmail, userPassword, userFirstName, userLastName):
         self.userEmail = userEmail
         self.userPassword = userPassword
@@ -22,7 +22,7 @@ class User0():
         pattern = r'[a-zA-Z0-9_\.\-]+@[a-z]+\.[a-z]+$'
 
         if not re.match(pattern,userEmail):
-            raise ValueError("Email Format is non valid. Valid format should be john-doe@gmail.com")
+            raise ValueError("Email Format is invalid. Valid format should be john-doe@gmail.com")
         
         self._userEmail = userEmail
 
