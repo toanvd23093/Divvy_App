@@ -3,7 +3,7 @@ import re
 # Create User object
 # Copyright 2025
 
-class User1():
+class User0():
     def __init__(self, userEmail, userPassword, userFirstName, userLastName):
         self.userEmail = userEmail
         self.userPassword = userPassword
