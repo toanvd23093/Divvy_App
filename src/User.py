@@ -22,7 +22,7 @@ class User():
         pattern = r'[a-zA-Z0-9_\.\-]+@[a-z]+\.[a-z]+$'
 
         if not re.match(pattern,userEmail):
-            raise ValueError("Email Format is not valid. Valid format should be john-doe@gmail.com")
+            raise ValueError("Email Format is invalid. Valid format should be john-doe@gmail.com")
         
         self._userEmail = userEmail
 
